@@ -2,12 +2,27 @@
 #include "raylib.h"
 #include <math.h>
 
-Texture2D platform_textures[3];
+#define PLATFORM_MIN_OFFSET 50
+#define PLATFORM_MAX_OFFSET 200
+
+#define PLATFORM_MIN_Y 75
+#define PLATFORM_MAX_Y 185
+#define PLATFORM_Y_RANGE 50
+
+#define PLATFORM_TEXTURES_COUNT 3
+
+Texture2D platform_textures[PLATFORM_TEXTURES_COUNT];
 
 void load_platform_textures() {
     platform_textures[0] = LoadTexture("assets/platform_big.png");
     platform_textures[1] = LoadTexture("assets/platform_medium.png");
     platform_textures[2] = LoadTexture("assets/platform_small.png");
+}
+
+void unload_platforms() {
+    for (int i = 0; i < PLATFORM_TEXTURES_COUNT; i++) {
+        UnloadTexture(platform_textures[i]);
+    }
 }
 
 void draw_platform(Platform *platform) {

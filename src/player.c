@@ -5,6 +5,20 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#define PLAYER_FRAME_WIDTH 13
+#define PLAYER_FRAME_HEIGHT 19
+
+#define PLAYER_ACCELERATION 3000
+#define PLAYER_MAX_SPEED 225
+#define PLAYER_FRICTION 0.85
+
+#define PLAYER_DASH_SPEED 650
+#define PLAYER_DASH_LENGTH 0.15
+
+#define PLAYER_GRAVITY 1600
+#define PLAYER_JUMP_VELOCITY 500
+#define PLAYER_JUMP_CUT 0.5
+
 int frame_counts[] = {1, 2, 6};
 float frame_lengths[] = {1, 0.17, 0.017};
 
@@ -25,6 +39,10 @@ void init_player(Player *player) {
     player->animation = PLAYER_RUN;
     player->is_on_floor = false;
     player->is_dashing = false;
+}
+
+void unload_player(Player *player) {
+    UnloadTexture(player->texture);
 }
 
 void draw_player(Player *player) {
@@ -76,7 +94,7 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
             set_animation(player, PLAYER_RUN);
             if (fabs(player->velocity.x) >= PLAYER_MAX_SPEED * GetFrameTime()) {
                 player->velocity.x =
-                    PLAYER_MAX_SPEED * (2 * (player->velocity.x > 0) - 1);
+                    PLAYER_MAX_SPEED * (2 * IsKeyDown(KEY_RIGHT) - 1);
             }
         }
     }
