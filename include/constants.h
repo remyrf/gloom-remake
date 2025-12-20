@@ -5,7 +5,6 @@
 #define WINDOW_HEIGHT 832
 #define GAME_WIDTH 368
 #define GAME_HEIGHT 208
-#define FPS 60
 #define SCALE_FACTOR 4
 #define COLOR_BLACK (Color){0x22, 0x23, 0x23, 0xFF}
 
