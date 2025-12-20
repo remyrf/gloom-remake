@@ -5,8 +5,8 @@
 #include <stdbool.h>
 #include <stdio.h>
 
-unsigned int frame_counts[] = {1, 2, 6};
-unsigned int frame_lengths[] = {1, 10, 1};
+int frame_counts[] = {1, 2, 6};
+float frame_lengths[] = {1, 0.17, 0.017};
 
 void set_animation(Player *player, PlayerAnimation animation) {
     if (player->animation != animation) {
@@ -38,9 +38,9 @@ void draw_player(Player *player) {
 }
 
 void update_player(Player *player, Platform platforms[], int platform_count) {
-    player->animation_timer =
-        (player->animation_timer + 1) % frame_lengths[player->animation];
-    if (player->animation_timer == 0) {
+    player->animation_timer += GetFrameTime();
+    if (player->animation_timer >= frame_lengths[player->animation]) {
+        player->animation_timer = 0;
         player->animation_frame++;
         if (player->animation == PLAYER_DASH) {
             if (player->animation_frame >= frame_counts[PLAYER_DASH]) {
@@ -57,7 +57,7 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
     }
 
     if (player->is_dashing) {
-        player->dash_timer++;
+        player->dash_timer += GetFrameTime();
         player->velocity.x = PLAYER_DASH_SPEED;
 
         set_animation(player, PLAYER_DASH);
@@ -72,16 +72,16 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
             player->velocity.x *= PLAYER_FRICTION;
             set_animation(player, PLAYER_IDLE);
         } else {
-            player->velocity.x += speed_change;
+            player->velocity.x += speed_change * GetFrameTime();
             set_animation(player, PLAYER_RUN);
-            if (fabs(player->velocity.x) >= PLAYER_MAX_SPEED) {
+            if (fabs(player->velocity.x) >= PLAYER_MAX_SPEED * GetFrameTime()) {
                 player->velocity.x =
                     PLAYER_MAX_SPEED * (2 * (player->velocity.x > 0) - 1);
             }
         }
     }
 
-    player->position.x += player->velocity.x;
+    player->position.x += player->velocity.x * GetFrameTime();
 
     for (int i = 0; i < platform_count; i++) {
         int platform_width = platform_textures[platforms[i].size].width;
@@ -106,7 +106,7 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
     if (player->is_dashing) {
         player->velocity.y = 0;
     } else {
-        player->velocity.y += PLAYER_GRAVITY;
+        player->velocity.y += PLAYER_GRAVITY * GetFrameTime();
     }
 
     if (player->is_on_floor) {
@@ -117,7 +117,7 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
         player->velocity.y *= PLAYER_JUMP_CUT;
     }
 
-    player->position.y += player->velocity.y;
+    player->position.y += player->velocity.y * GetFrameTime();
 
     player->is_on_floor = false;
     for (int i = 0; i < platform_count; i++) {

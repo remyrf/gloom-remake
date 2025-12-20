@@ -25,10 +25,9 @@ int background_positions[BACKGROUND_COUNT];
 int pillar_position;
 
 void init_game() {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Gloom");
     InitAudioDevice();
-    SetTargetFPS(FPS);
     SetRandomSeed(time(NULL));
 
     background_texture = LoadTexture("assets/background.png");
@@ -80,9 +79,10 @@ void update_game() {
         pillar_position = pillars_camera.target.x + GAME_WIDTH;
     }
 
-    background_camera.target.x += CAMERA_SPEED * BACKGROUND_PARALLAX;
-    pillars_camera.target.x += CAMERA_SPEED * PILLARS_PARALLAX;
-    game_camera.target.x += CAMERA_SPEED;
+    background_camera.target.x +=
+        CAMERA_SPEED * BACKGROUND_PARALLAX * GetFrameTime();
+    pillars_camera.target.x += CAMERA_SPEED * PILLARS_PARALLAX * GetFrameTime();
+    game_camera.target.x += CAMERA_SPEED * GetFrameTime();
 
     for (int i = 0; i < PLATFORM_COUNT; i++) {
         update_platform(platforms, i, PLATFORM_COUNT, &game_camera);

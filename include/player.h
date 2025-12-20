@@ -8,15 +8,15 @@
 #define PLAYER_FRAME_WIDTH 13
 #define PLAYER_FRAME_HEIGHT 19
 
-#define PLAYER_ACCELERATION 0.3
-#define PLAYER_MAX_SPEED 3.5
-#define PLAYER_FRICTION 0.75
+#define PLAYER_ACCELERATION 3000
+#define PLAYER_MAX_SPEED 225
+#define PLAYER_FRICTION 0.85
 
-#define PLAYER_DASH_SPEED 12
-#define PLAYER_DASH_LENGTH 10
+#define PLAYER_DASH_SPEED 650
+#define PLAYER_DASH_LENGTH 0.15
 
-#define PLAYER_GRAVITY 0.3
-#define PLAYER_JUMP_VELOCITY 6
+#define PLAYER_GRAVITY 1600
+#define PLAYER_JUMP_VELOCITY 500
 #define PLAYER_JUMP_CUT 0.5
 
 typedef enum { PLAYER_IDLE, PLAYER_RUN, PLAYER_DASH } PlayerAnimation;
@@ -27,13 +27,13 @@ typedef struct {
 
     Texture2D texture;
 
-    unsigned int animation_frame;
-    unsigned int animation_timer;
+    int animation_frame;
+    float animation_timer;
 
     bool is_on_floor;
     bool is_dashing;
 
-    unsigned int dash_timer;
+    float dash_timer;
 
     PlayerAnimation animation;
 } Player;
