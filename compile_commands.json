@@ -1,0 +1,50 @@
+[
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-Wall",
+      "-Wextra",
+      "-Iinclude",
+      "-I/opt/homebrew/Cellar/raylib/5.5/include",
+      "-o",
+      "gloom",
+      "src/player.c"
+    ],
+    "directory": "/Users/remyfouquette/Documents/gloom-remake",
+    "file": "/Users/remyfouquette/Documents/gloom-remake/src/player.c",
+    "output": "/Users/remyfouquette/Documents/gloom-remake/gloom"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-Wall",
+      "-Wextra",
+      "-Iinclude",
+      "-I/opt/homebrew/Cellar/raylib/5.5/include",
+      "-o",
+      "gloom",
+      "src/main.c"
+    ],
+    "directory": "/Users/remyfouquette/Documents/gloom-remake",
+    "file": "/Users/remyfouquette/Documents/gloom-remake/src/main.c",
+    "output": "/Users/remyfouquette/Documents/gloom-remake/gloom"
+  },
+  {
+    "arguments": [
+      "/usr/bin/cc",
+      "-c",
+      "-Wall",
+      "-Wextra",
+      "-Iinclude",
+      "-I/opt/homebrew/Cellar/raylib/5.5/include",
+      "-o",
+      "gloom",
+      "src/platform.c"
+    ],
+    "directory": "/Users/remyfouquette/Documents/gloom-remake",
+    "file": "/Users/remyfouquette/Documents/gloom-remake/src/platform.c",
+    "output": "/Users/remyfouquette/Documents/gloom-remake/gloom"
+  }
+]
