@@ -1,27 +1,37 @@
 #include "player.h"
+#include "coin.h"
+#include "constants.h"
+#include "game.h"
+#include "items.h"
 #include "platform.h"
 #include "raylib.h"
+#include "shadow.h"
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
 
-#define PLAYER_FRAME_WIDTH 13
-#define PLAYER_FRAME_HEIGHT 19
-
-#define PLAYER_ACCELERATION 2000
-#define PLAYER_MAX_SPEED 175
+#define PLAYER_ACCELERATION 1800
+#define PLAYER_MAX_SPEED 165
 #define PLAYER_FRICTION 0.85
 
-#define PLAYER_DASH_SPEED 550
+#define PLAYER_DASH_SPEED 520
 #define PLAYER_DASH_LENGTH 0.2
 
-#define PLAYER_GRAVITY 1500
-#define PLAYER_JUMP_VELOCITY 450
+#define PLAYER_GRAVITY 1300
+#define PLAYER_JUMP_VELOCITY 420
 #define PLAYER_JUMP_CUT 0.5
+
+#define PLAYER_FLASH_LENGTH 0.2
 
 int player_frame_counts[] = {1, 2, 6};
 float player_frame_lengths[] = {1, 0.17, 0.017};
 Texture2D player_texture;
+Texture2D flashlight_texture;
+
+static void die() {
+    // TODO:
+    reset_game();
+}
 
 void set_animation(Player *player, PlayerAnimation animation) {
     if (player->animation != animation) {
@@ -33,10 +43,12 @@ void set_animation(Player *player, PlayerAnimation animation) {
 
 void load_player() {
     player_texture = LoadTexture("assets/player.png");
+    flashlight_texture = LoadTexture("assets/flashlight.png");
 }
 
 void unload_player() {
     UnloadTexture(player_texture);
+    UnloadTexture(flashlight_texture);
 }
 
 void init_player(Player *player) {
@@ -47,6 +59,7 @@ void init_player(Player *player) {
     player->animation = PLAYER_RUN;
     player->is_on_floor = false;
     player->is_dashing = false;
+    player->is_flashing = false;
 }
 
 void draw_player(Player *player) {
@@ -57,9 +70,16 @@ void draw_player(Player *player) {
                    (Rectangle){player->position.x, player->position.y, PLAYER_FRAME_WIDTH,
                                PLAYER_FRAME_HEIGHT},
                    (Vector2){0, 0}, 0, WHITE);
+
+    if (player->is_flashing) {
+        DrawTextureV(flashlight_texture, player->flashlight_position, WHITE);
+    }
 }
 
-void update_player(Player *player, Platform platforms[], int platform_count) {
+void update_player(Player *player, Platform platforms[], Camera2D *game_camera) {
+    player->flashlight_position.x = player->position.x + PLAYER_FRAME_WIDTH + 2;
+    player->flashlight_position.y = player->position.y + 2;
+
     player->animation_timer += GetFrameTime();
     if (player->animation_timer >= player_frame_lengths[player->animation]) {
         player->animation_timer = 0;
@@ -73,8 +93,9 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
         }
     }
 
-    if (!player->is_on_floor && IsKeyPressed(KEY_C)) {
+    if (!player->is_on_floor && IsKeyPressed(KEY_C) && player->can_dash) {
         player->is_dashing = true;
+        player->can_dash = false;
         player->dash_timer = 0;
     }
 
@@ -104,7 +125,7 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
 
     player->position.x += player->velocity.x * GetFrameTime();
 
-    for (int i = 0; i < platform_count; i++) {
+    for (int i = 0; i < PLATFORM_COUNT; i++) {
         int platform_width = platform_textures[platforms[i].size].width;
         if (CheckCollisionRecs((Rectangle){player->position.x, player->position.y,
                                            PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT},
@@ -137,7 +158,7 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
     player->position.y += player->velocity.y * GetFrameTime();
 
     player->is_on_floor = false;
-    for (int i = 0; i < platform_count; i++) {
+    for (int i = 0; i < PLATFORM_COUNT; i++) {
         if (CheckCollisionRecs((Rectangle){player->position.x, player->position.y,
                                            PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT},
                                (Rectangle){platforms[i].position.x, platforms[i].position.y,
@@ -145,7 +166,62 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
                                            PLATFORM_HEIGHT})) {
             player->velocity.y = 0;
             player->is_on_floor = true;
+            player->can_dash = true;
             player->position.y = platforms[i].position.y - PLAYER_FRAME_HEIGHT;
         }
+
+        switch (platforms[i].type) {
+            case PLATFORM_COIN:
+                {
+                    Coin *coin = &platforms[i].item.coin;
+                    if (CheckCollisionRecs((Rectangle){player->position.x, player->position.y,
+                                                       PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT},
+                                           (Rectangle){coin->position.x, coin->position.y,
+                                                       COIN_FRAME_WIDTH, coin_texture.height})) {
+                        collect_coin(coin);
+                    }
+                    break;
+                }
+
+            case PLATFORM_SHADOW:
+                {
+                    Shadow *shadow = &platforms[i].item.shadow;
+                    if (CheckCollisionRecs((Rectangle){player->position.x, player->position.y,
+                                                       PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT},
+                                           (Rectangle){shadow->position.x, shadow->position.y,
+                                                       SHADOW_FRAME_WIDTH, SHADOW_FRAME_HEIGHT})) {
+                        if (!shadow->hit) {
+                            die();
+                        }
+                    } else if (player->is_flashing &&
+                               CheckCollisionRecs(
+                                   (Rectangle){shadow->position.x, shadow->position.y,
+                                               SHADOW_FRAME_WIDTH, SHADOW_FRAME_HEIGHT},
+                                   (Rectangle){
+                                       player->flashlight_position.x, player->flashlight_position.y,
+                                       flashlight_texture.width, flashlight_texture.height})) {
+                        kill_shadow(shadow);
+                    }
+                }
+                break;
+        }
+    }
+
+    if ((IsKeyPressed(KEY_LEFT_SHIFT) || IsKeyPressed(KEY_RIGHT_SHIFT)) && !player->is_flashing) {
+        player->is_flashing = true;
+        player->flash_timer = 0;
+    }
+
+    if (player->is_flashing) {
+        player->flash_timer += GetFrameTime();
+        if (player->flash_timer >= PLAYER_FLASH_LENGTH) {
+            player->is_flashing = false;
+        }
+    }
+
+    if (player->position.x + PLAYER_FRAME_WIDTH < game_camera->target.x ||
+        player->position.x > game_camera->target.x + GAME_WIDTH ||
+        player->position.y > game_camera->target.y + GAME_HEIGHT) {
+        die();
     }
 }

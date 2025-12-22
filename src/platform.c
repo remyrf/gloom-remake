@@ -52,7 +52,9 @@ void draw_platform(Platform *platform) {
 void update_platform(Platform platforms[], int index, int platform_count, Camera2D *camera) {
     Platform *platform = &platforms[index];
 
-    if (platform->position.x + platform_textures[platform->size].width < camera->target.x) {
+    if (platform->position.x + platform_textures[platform->size].width < camera->target.x &&
+        (platform->type == PLATFORM_SHADOW || platform->item.coin.done_particles ||
+         !platform->item.coin.collected)) {
         Platform *rightmost = platform;
         for (int i = 0; i < platform_count; i++) {
             if (platforms[i].position.x > rightmost->position.x) {

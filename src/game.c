@@ -4,17 +4,21 @@
 #include "platform.h"
 #include "player.h"
 #include "raylib.h"
+#include "raymath.h"
 #include "shadow.h"
 #include <limits.h>
 #include <math.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 #define BACKGROUND_COUNT 2
-#define PLATFORM_COUNT 6
 
-#define CAMERA_SPEED 130
+#define CAMERA_SPEED 120
 #define PILLARS_PARALLAX 0.75
 #define BACKGROUND_PARALLAX 0.5
+
+#define SHAKE_LERP_AMOUNT 0.2
 
 Player player;
 Platform platforms[PLATFORM_COUNT];
@@ -27,6 +31,12 @@ Music music;
 Camera2D background_camera;
 Camera2D pillars_camera;
 Camera2D game_camera;
+
+bool shaking = false;
+float shake_timer;
+float shake_length;
+float shake_amount;
+float shake_offset = 0;
 
 int background_positions[BACKGROUND_COUNT];
 int pillar_position;
@@ -54,6 +64,7 @@ void unload_game() {
 }
 
 void reset_game() {
+    memset(platforms, 0, sizeof(platforms));
     platforms[0] = (Platform){
         .position = (Vector2){175, 150},
         .size = PLATFORM_BIG,
@@ -65,9 +76,9 @@ void reset_game() {
         Platform *platform = &platforms[i];
         Platform *rightmost = platform;
 
-        for (int i = 0; i < PLATFORM_COUNT; i++) {
-            if (platforms[i].position.x > rightmost->position.x) {
-                rightmost = &platforms[i];
+        for (int j = 0; j < PLATFORM_COUNT; j++) {
+            if (platforms[j].position.x > rightmost->position.x) {
+                rightmost = &platforms[j];
             }
         }
 
@@ -88,6 +99,7 @@ void reset_game() {
     background_positions[1] = GAME_WIDTH;
     pillar_position = 200;
 
+    SeekMusicStream(music, 0);
     PlayMusicStream(music);
 }
 
@@ -114,7 +126,17 @@ void update_game() {
         update_platform(platforms, i, PLATFORM_COUNT, &game_camera);
     }
 
-    update_player(&player, platforms, PLATFORM_COUNT);
+    update_player(&player, platforms, &game_camera);
+
+    if (shaking) {
+        shake_timer += GetFrameTime();
+        shake_offset += GetRandomValue(0, 100) / 100.0 * shake_amount - 0.5 * shake_amount;
+        if (shake_timer >= shake_length) {
+            shaking = false;
+        }
+    } else {
+        shake_offset = Lerp(shake_offset, 0, 0.2);
+    }
 }
 
 void draw_game() {
@@ -136,9 +158,9 @@ void draw_game() {
     pillars_camera.zoom = scale;
     game_camera.zoom = scale;
 
-    background_camera.offset = (Vector2){offset_x, offset_y};
-    pillars_camera.offset = (Vector2){offset_x, offset_y};
-    game_camera.offset = (Vector2){offset_x, offset_y};
+    background_camera.offset = (Vector2){offset_x, offset_y + shake_offset};
+    pillars_camera.offset = (Vector2){offset_x, offset_y + shake_offset};
+    game_camera.offset = (Vector2){offset_x, offset_y + shake_offset};
 
     BeginDrawing();
 
@@ -155,11 +177,12 @@ void draw_game() {
     EndMode2D();
 
     BeginMode2D(game_camera);
-    draw_player(&player);
 
     for (int i = 0; i < PLATFORM_COUNT; i++) {
         draw_platform(&platforms[i]);
     }
+
+    draw_player(&player);
 
     EndMode2D();
 
@@ -170,4 +193,11 @@ void draw_game() {
     DrawRectangle(0, scale * GAME_HEIGHT + offset_y, GetScreenWidth(), INT_MAX, BLACK);
 
     EndDrawing();
+}
+
+void shake_screen(float time, float amount) {
+    shaking = true;
+    shake_timer = 0;
+    shake_length = time;
+    shake_amount = amount;
 }
