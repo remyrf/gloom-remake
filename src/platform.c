@@ -6,15 +6,16 @@
 
 #define PLATFORM_TEXTURES_COUNT 3
 
+#define PLATFORM_ITEM_CASE(NAME, UP, LOW, ...)                                                     \
+    case PLATFORM_##UP:                                                                            \
+        NAME##_##LOW(&platform->item.LOW __VA_OPT__(, ) __VA_ARGS__);                              \
+        break;
+
 #define PLATFORM_ITEM_FUNC(NAME, ...)                                                              \
     do {                                                                                           \
         switch (platform->type) {                                                                  \
-            case PLATFORM_COIN:                                                                    \
-                NAME##_coin(&platform->item.coin __VA_OPT__(, ) __VA_ARGS__);                      \
-                break;                                                                             \
-            case PLATFORM_SHADOW:                                                                  \
-                NAME##_shadow(&platform->item.shadow __VA_OPT__(, ) __VA_ARGS__);                  \
-                break;                                                                             \
+            PLATFORM_ITEM_CASE(NAME, COIN, coin, __VA_ARGS__)                                      \
+            PLATFORM_ITEM_CASE(NAME, SHADOW, shadow, __VA_ARGS__)                                  \
         }                                                                                          \
     } while (0)
 
