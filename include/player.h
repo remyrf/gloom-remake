@@ -11,8 +11,6 @@ typedef struct {
     Vector2 position;
     Vector2 velocity;
 
-    Texture2D texture;
-
     int animation_frame;
     float animation_timer;
 
@@ -24,8 +22,10 @@ typedef struct {
     PlayerAnimation animation;
 } Player;
 
+void load_player();
+void unload_player();
+
 void init_player(Player *player);
-void unload_player(Player *player);
 void draw_player(Player *player);
 void update_player(Player *player, Platform platforms[], int platform_count);
 

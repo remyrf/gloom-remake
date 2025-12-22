@@ -8,19 +8,20 @@
 #define PLAYER_FRAME_WIDTH 13
 #define PLAYER_FRAME_HEIGHT 19
 
-#define PLAYER_ACCELERATION 3000
-#define PLAYER_MAX_SPEED 225
+#define PLAYER_ACCELERATION 2000
+#define PLAYER_MAX_SPEED 175
 #define PLAYER_FRICTION 0.85
 
-#define PLAYER_DASH_SPEED 650
-#define PLAYER_DASH_LENGTH 0.15
+#define PLAYER_DASH_SPEED 550
+#define PLAYER_DASH_LENGTH 0.2
 
-#define PLAYER_GRAVITY 1600
-#define PLAYER_JUMP_VELOCITY 500
+#define PLAYER_GRAVITY 1500
+#define PLAYER_JUMP_VELOCITY 450
 #define PLAYER_JUMP_CUT 0.5
 
-int frame_counts[] = {1, 2, 6};
-float frame_lengths[] = {1, 0.17, 0.017};
+int player_frame_counts[] = {1, 2, 6};
+float player_frame_lengths[] = {1, 0.17, 0.017};
+Texture2D player_texture;
 
 void set_animation(Player *player, PlayerAnimation animation) {
     if (player->animation != animation) {
@@ -30,10 +31,17 @@ void set_animation(Player *player, PlayerAnimation animation) {
     }
 }
 
+void load_player() {
+    player_texture = LoadTexture("assets/player.png");
+}
+
+void unload_player() {
+    UnloadTexture(player_texture);
+}
+
 void init_player(Player *player) {
-    player->position = (Vector2){150, 50};
+    player->position = (Vector2){200, 50};
     player->velocity = (Vector2){0, 0};
-    player->texture = LoadTexture("assets/player.png");
     player->animation_frame = 0;
     player->animation_timer = 0;
     player->animation = PLAYER_RUN;
@@ -41,31 +49,27 @@ void init_player(Player *player) {
     player->is_dashing = false;
 }
 
-void unload_player(Player *player) {
-    UnloadTexture(player->texture);
-}
-
 void draw_player(Player *player) {
-    DrawTexturePro(player->texture,
+    DrawTexturePro(player_texture,
                    (Rectangle){player->animation_frame * PLAYER_FRAME_WIDTH,
-                               player->animation * PLAYER_FRAME_HEIGHT,
-                               PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT},
-                   (Rectangle){player->position.x, player->position.y,
-                               PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT},
+                               player->animation * PLAYER_FRAME_HEIGHT, PLAYER_FRAME_WIDTH,
+                               PLAYER_FRAME_HEIGHT},
+                   (Rectangle){player->position.x, player->position.y, PLAYER_FRAME_WIDTH,
+                               PLAYER_FRAME_HEIGHT},
                    (Vector2){0, 0}, 0, WHITE);
 }
 
 void update_player(Player *player, Platform platforms[], int platform_count) {
     player->animation_timer += GetFrameTime();
-    if (player->animation_timer >= frame_lengths[player->animation]) {
+    if (player->animation_timer >= player_frame_lengths[player->animation]) {
         player->animation_timer = 0;
         player->animation_frame++;
         if (player->animation == PLAYER_DASH) {
-            if (player->animation_frame >= frame_counts[PLAYER_DASH]) {
-                player->animation_frame = frame_counts[PLAYER_DASH] - 1;
+            if (player->animation_frame >= player_frame_counts[PLAYER_DASH]) {
+                player->animation_frame = player_frame_counts[PLAYER_DASH] - 1;
             }
         } else {
-            player->animation_frame %= frame_counts[player->animation];
+            player->animation_frame %= player_frame_counts[player->animation];
         }
     }
 
@@ -93,8 +97,7 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
             player->velocity.x += speed_change * GetFrameTime();
             set_animation(player, PLAYER_RUN);
             if (fabs(player->velocity.x) >= PLAYER_MAX_SPEED * GetFrameTime()) {
-                player->velocity.x =
-                    PLAYER_MAX_SPEED * (2 * IsKeyDown(KEY_RIGHT) - 1);
+                player->velocity.x = PLAYER_MAX_SPEED * (2 * IsKeyDown(KEY_RIGHT) - 1);
             }
         }
     }
@@ -103,18 +106,14 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
 
     for (int i = 0; i < platform_count; i++) {
         int platform_width = platform_textures[platforms[i].size].width;
-        if (CheckCollisionRecs(
-                (Rectangle){player->position.x, player->position.y,
-                            PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT},
-                (Rectangle){platforms[i].position.x, platforms[i].position.y,
-                            platform_width, PLATFORM_HEIGHT})) {
+        if (CheckCollisionRecs((Rectangle){player->position.x, player->position.y,
+                                           PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT},
+                               (Rectangle){platforms[i].position.x, platforms[i].position.y,
+                                           platform_width, PLATFORM_HEIGHT})) {
             player->velocity.x = 0;
-            if (fabs(player->position.x + PLAYER_FRAME_WIDTH -
-                     platforms[i].position.x) <
-                fabs(platforms[i].position.x + platform_width -
-                     player->position.x)) {
-                player->position.x =
-                    platforms[i].position.x - PLAYER_FRAME_WIDTH;
+            if (fabs(player->position.x + PLAYER_FRAME_WIDTH - platforms[i].position.x) <
+                fabs(platforms[i].position.x + platform_width - player->position.x)) {
+                player->position.x = platforms[i].position.x - PLAYER_FRAME_WIDTH;
             } else {
                 player->position.x = platforms[i].position.x + platform_width;
             }
@@ -139,12 +138,11 @@ void update_player(Player *player, Platform platforms[], int platform_count) {
 
     player->is_on_floor = false;
     for (int i = 0; i < platform_count; i++) {
-        if (CheckCollisionRecs(
-                (Rectangle){player->position.x, player->position.y,
-                            PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT},
-                (Rectangle){platforms[i].position.x, platforms[i].position.y,
-                            platform_textures[platforms[i].size].width,
-                            PLATFORM_HEIGHT})) {
+        if (CheckCollisionRecs((Rectangle){player->position.x, player->position.y,
+                                           PLAYER_FRAME_WIDTH, PLAYER_FRAME_HEIGHT},
+                               (Rectangle){platforms[i].position.x, platforms[i].position.y,
+                                           platform_textures[platforms[i].size].width,
+                                           PLATFORM_HEIGHT})) {
             player->velocity.y = 0;
             player->is_on_floor = true;
             player->position.y = platforms[i].position.y - PLAYER_FRAME_HEIGHT;

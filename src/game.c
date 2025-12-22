@@ -1,12 +1,16 @@
 #include "game.h"
+#include "coin.h"
 #include "constants.h"
 #include "platform.h"
 #include "player.h"
 #include "raylib.h"
+#include "shadow.h"
 #include <limits.h>
+#include <math.h>
+#include <stdio.h>
 
 #define BACKGROUND_COUNT 2
-#define PLATFORM_COUNT 3
+#define PLATFORM_COUNT 6
 
 #define CAMERA_SPEED 130
 #define PILLARS_PARALLAX 0.75
@@ -31,26 +35,50 @@ void load_game() {
     background_texture = LoadTexture("assets/background.png");
     pillar_texture = LoadTexture("assets/pillar.png");
     music = LoadMusicStream("assets/music.mp3");
+
+    load_platforms();
+    load_player();
+    load_coin();
+    load_shadow();
 }
 
 void unload_game() {
     UnloadTexture(background_texture);
     UnloadTexture(pillar_texture);
     UnloadMusicStream(music);
-    unload_player(&player);
+
     unload_platforms();
+    unload_player();
+    unload_coin();
+    unload_shadow();
 }
 
 void reset_game() {
-    platforms[0] =
-        (Platform){.position = (Vector2){100, 150}, .size = PLATFORM_MEDIUM};
-    platforms[1] =
-        (Platform){.position = (Vector2){300, 125}, .size = PLATFORM_BIG};
-    platforms[2] =
-        (Platform){.position = (Vector2){600, 175}, .size = PLATFORM_SMALL};
+    platforms[0] = (Platform){
+        .position = (Vector2){175, 150},
+        .size = PLATFORM_BIG,
+        .type = PLATFORM_SHADOW,
+    };
+    init_shadow(&platforms[0].item.shadow, &platforms[0]);
+
+    for (int i = 1; i < PLATFORM_COUNT; i++) {
+        Platform *platform = &platforms[i];
+        Platform *rightmost = platform;
+
+        for (int i = 0; i < PLATFORM_COUNT; i++) {
+            if (platforms[i].position.x > rightmost->position.x) {
+                rightmost = &platforms[i];
+            }
+        }
+
+        init_platform(platform,
+                      rightmost->position.x + platform_textures[rightmost->size].width +
+                          GetRandomValue(PLATFORM_MIN_OFFSET, PLATFORM_MAX_OFFSET),
+                      GetRandomValue(fmax(rightmost->position.y - PLATFORM_Y_RANGE, PLATFORM_MIN_Y),
+                                     PLATFORM_MAX_Y));
+    }
 
     init_player(&player);
-    load_platform_textures();
 
     background_camera = (Camera2D){(Vector2){0, 0}, (Vector2){0, 0}, 0, 1};
     pillars_camera = (Camera2D){(Vector2){0, 0}, (Vector2){0, 0}, 0, 1};
@@ -78,8 +106,7 @@ void update_game() {
         pillar_position = pillars_camera.target.x + GAME_WIDTH;
     }
 
-    background_camera.target.x +=
-        CAMERA_SPEED * BACKGROUND_PARALLAX * GetFrameTime();
+    background_camera.target.x += CAMERA_SPEED * BACKGROUND_PARALLAX * GetFrameTime();
     pillars_camera.target.x += CAMERA_SPEED * PILLARS_PARALLAX * GetFrameTime();
     game_camera.target.x += CAMERA_SPEED * GetFrameTime();
 
@@ -137,12 +164,10 @@ void draw_game() {
     EndMode2D();
 
     DrawRectangle(0, 0, offset_x, GetScreenHeight(), BLACK);
-    DrawRectangle(scale * GAME_WIDTH + offset_x, 0, INT_MAX, GetScreenHeight(),
-                  BLACK);
+    DrawRectangle(scale * GAME_WIDTH + offset_x, 0, INT_MAX, GetScreenHeight(), BLACK);
 
     DrawRectangle(0, 0, GetScreenWidth(), offset_y, BLACK);
-    DrawRectangle(0, scale * GAME_HEIGHT + offset_y, GetScreenWidth(), INT_MAX,
-                  BLACK);
+    DrawRectangle(0, scale * GAME_HEIGHT + offset_y, GetScreenWidth(), INT_MAX, BLACK);
 
     EndDrawing();
 }
