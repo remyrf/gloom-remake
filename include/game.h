@@ -3,6 +3,8 @@
 
 #define PLATFORM_COUNT 10
 
+extern int score;
+
 void load_game();
 void unload_game();
 void close_game();

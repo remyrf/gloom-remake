@@ -1,5 +1,6 @@
 #include "coin.h"
-#include "constants.h"
+#include "game.h"
+#include "globals.h"
 #include "items.h"
 #include "platform.h"
 #include "raylib.h"
@@ -19,13 +20,16 @@
 #define COIN_PARTICLE_SIZE 1.5
 
 Texture2D coin_texture;
+Sound coin_sound;
 
 void load_coin() {
     coin_texture = LoadTexture("assets/coin.png");
+    coin_sound = LoadSound("assets/coin.wav");
 }
 
 void unload_coin() {
     UnloadTexture(coin_texture);
+    UnloadSound(coin_sound);
 }
 
 void init_coin(Coin *coin, Platform *platform) {
@@ -58,6 +62,9 @@ void collect_coin(Coin *coin) {
     if (coin->collected) {
         return;
     }
+
+    PlaySound(coin_sound);
+    score += 200;
 
     coin->collected = true;
     coin->done_particles = false;

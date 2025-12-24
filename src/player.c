@@ -1,8 +1,9 @@
 #include "player.h"
 #include "coin.h"
-#include "constants.h"
 #include "game.h"
+#include "globals.h"
 #include "items.h"
+#include "menu.h"
 #include "platform.h"
 #include "raylib.h"
 #include "shadow.h"
@@ -28,9 +29,14 @@ float player_frame_lengths[] = {1, 0.17, 0.017};
 Texture2D player_texture;
 Texture2D flashlight_texture;
 
+Sound player_dash;
+Sound player_jump;
+Sound player_death;
+
 static void die() {
-    // TODO:
-    reset_game();
+    PlaySound(player_death);
+    scene = SCENE_MENU;
+    reset_menu();
 }
 
 void set_animation(Player *player, PlayerAnimation animation) {
@@ -44,11 +50,19 @@ void set_animation(Player *player, PlayerAnimation animation) {
 void load_player() {
     player_texture = LoadTexture("assets/player.png");
     flashlight_texture = LoadTexture("assets/flashlight.png");
+
+    player_dash = LoadSound("assets/dash.wav");
+    player_jump = LoadSound("assets/jump.wav");
+    player_death = LoadSound("assets/player_death.wav");
 }
 
 void unload_player() {
     UnloadTexture(player_texture);
     UnloadTexture(flashlight_texture);
+
+    UnloadSound(player_dash);
+    UnloadSound(player_jump);
+    UnloadSound(player_death);
 }
 
 void init_player(Player *player) {
@@ -97,6 +111,7 @@ void update_player(Player *player, Platform platforms[], Camera2D *game_camera) 
         player->is_dashing = true;
         player->can_dash = false;
         player->dash_timer = 0;
+        PlaySound(player_dash);
     }
 
     if (player->is_dashing) {
@@ -150,6 +165,7 @@ void update_player(Player *player, Platform platforms[], Camera2D *game_camera) 
     if (player->is_on_floor) {
         if (IsKeyPressed(KEY_UP)) {
             player->velocity.y = -PLAYER_JUMP_VELOCITY;
+            PlaySound(player_jump);
         }
     } else if (IsKeyReleased(KEY_UP) && player->velocity.y < 0) {
         player->velocity.y *= PLAYER_JUMP_CUT;

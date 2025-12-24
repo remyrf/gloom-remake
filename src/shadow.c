@@ -11,15 +11,18 @@
 #define SHADOW_FALL_SPEED 150
 
 int shadow_frame_counts[] = {4, 9};
-float shadow_frame_lengths[] = {0.15, 0.1};
+float shadow_frame_lengths[] = {0.15, 0.13};
 Texture2D shadow_texture;
+Sound shadow_sound;
 
 void load_shadow() {
     shadow_texture = LoadTexture("assets/shadow.png");
+    shadow_sound = LoadSound("assets/shadow_death.wav");
 }
 
 void unload_shadow() {
     UnloadTexture(shadow_texture);
+    UnloadSound(shadow_sound);
 }
 
 void init_shadow(Shadow *shadow, Platform *platform) {
@@ -75,6 +78,10 @@ void kill_shadow(Shadow *shadow) {
         return;
     }
 
+    PlaySound(shadow_sound);
+
+    score += 100;
+
     shadow->hit = true;
-    shake_screen(1, 5);
+    shake_screen(1, 10);
 }

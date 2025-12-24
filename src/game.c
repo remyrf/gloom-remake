@@ -1,12 +1,11 @@
 #include "game.h"
 #include "coin.h"
-#include "constants.h"
+#include "globals.h"
 #include "platform.h"
 #include "player.h"
 #include "raylib.h"
 #include "raymath.h"
 #include "shadow.h"
-#include <limits.h>
 #include <math.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -26,7 +25,7 @@ Platform platforms[PLATFORM_COUNT];
 Texture2D background_texture;
 Texture2D pillar_texture;
 
-Music music;
+Music game_music;
 
 Camera2D background_camera;
 Camera2D pillars_camera;
@@ -41,10 +40,14 @@ float shake_offset = 0;
 int background_positions[BACKGROUND_COUNT];
 int pillar_position;
 
+int score;
+int distance;
+float distance_timer;
+
 void load_game() {
     background_texture = LoadTexture("assets/background.png");
     pillar_texture = LoadTexture("assets/pillar.png");
-    music = LoadMusicStream("assets/music.mp3");
+    game_music = LoadMusicStream("assets/music.mp3");
 
     load_platforms();
     load_player();
@@ -55,7 +58,8 @@ void load_game() {
 void unload_game() {
     UnloadTexture(background_texture);
     UnloadTexture(pillar_texture);
-    UnloadMusicStream(music);
+    UnloadMusicStream(game_music);
+    UnloadFont(font);
 
     unload_platforms();
     unload_player();
@@ -99,14 +103,18 @@ void reset_game() {
     background_positions[1] = GAME_WIDTH;
     pillar_position = 200;
 
-    SeekMusicStream(music, 0);
-    PlayMusicStream(music);
+    SeekMusicStream(game_music, 0);
+    PlayMusicStream(game_music);
+
+    score = 0;
+    distance = 0;
+    distance_timer = 0;
 }
 
 void update_game() {
-    UpdateMusicStream(music);
-    if (!IsMusicStreamPlaying(music)) {
-        PlayMusicStream(music);
+    UpdateMusicStream(game_music);
+    if (!IsMusicStreamPlaying(game_music)) {
+        PlayMusicStream(game_music);
     }
 
     for (int i = 0; i < BACKGROUND_COUNT; i++) {
@@ -130,28 +138,19 @@ void update_game() {
 
     if (shaking) {
         shake_timer += GetFrameTime();
-        shake_offset += GetRandomValue(0, 100) / 100.0 * shake_amount - 0.5 * shake_amount;
+        shake_offset = GetRandomValue(0, 100) / 100.0 * shake_amount - 0.5 * shake_amount;
         if (shake_timer >= shake_length) {
             shaking = false;
         }
     } else {
         shake_offset = Lerp(shake_offset, 0, 0.2);
     }
-}
 
-void draw_game() {
-    float scale;
-    float screen_ratio = (float)GetScreenWidth() / (float)GetScreenHeight();
-    float output_ratio = (float)GAME_WIDTH / (float)GAME_HEIGHT;
-    float offset_x = 0;
-    float offset_y = 0;
-
-    if (screen_ratio > output_ratio) {
-        scale = (float)GetScreenHeight() / (float)GAME_HEIGHT;
-        offset_x = 0.5 * (GetScreenWidth() - GAME_WIDTH * scale);
-    } else {
-        scale = (float)GetScreenWidth() / (float)GAME_WIDTH;
-        offset_y = 0.5 * (GetScreenHeight() - GAME_HEIGHT * scale);
+    distance_timer += GetFrameTime();
+    if (distance_timer >= 0.5) {
+        distance_timer = 0;
+        distance += 1;
+        score += 10;
     }
 
     background_camera.zoom = scale;
@@ -162,10 +161,12 @@ void draw_game() {
     pillars_camera.offset = (Vector2){offset_x, offset_y + shake_offset};
     game_camera.offset = (Vector2){offset_x, offset_y + shake_offset};
 
-    BeginDrawing();
+    if (score > high_score) {
+        high_score = score;
+    }
+}
 
-    ClearBackground(COLOR_BLACK);
-
+void draw_game() {
     BeginMode2D(background_camera);
     for (int i = 0; i < BACKGROUND_COUNT; i++) {
         DrawTexture(background_texture, background_positions[i], 0, WHITE);
@@ -186,13 +187,16 @@ void draw_game() {
 
     EndMode2D();
 
-    DrawRectangle(0, 0, offset_x, GetScreenHeight(), BLACK);
-    DrawRectangle(scale * GAME_WIDTH + offset_x, 0, INT_MAX, GetScreenHeight(), BLACK);
+    DrawTextEx(font, TextFormat("Distance: %dm", distance),
+               (Vector2){offset_x + 3 * scale, offset_y + 3 * scale}, scale * 8, 1, COLOR_WHITE);
+    DrawTextEx(font, TextFormat("Score: %d", score),
+               (Vector2){offset_x + 3 * scale, offset_y + 13 * scale}, scale * 8, 1, COLOR_WHITE);
 
-    DrawRectangle(0, 0, GetScreenWidth(), offset_y, BLACK);
-    DrawRectangle(0, scale * GAME_HEIGHT + offset_y, GetScreenWidth(), INT_MAX, BLACK);
-
-    EndDrawing();
+    const char *high_score_text = TextFormat("High Score: %d", high_score);
+    Vector2 high_score_size = MeasureTextEx(font, high_score_text, scale * 8, 1);
+    DrawTextEx(font, TextFormat(high_score_text, high_score),
+               (Vector2){GetScreenWidth() - offset_x - 5 - high_score_size.x, offset_y + 3 * scale},
+               scale * 8, 1, COLOR_WHITE);
 }
 
 void shake_screen(float time, float amount) {
