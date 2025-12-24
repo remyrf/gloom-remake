@@ -24,7 +24,7 @@ bool window_should_close;
 int high_score;
 
 int load_high_score() {
-    FILE *file = fopen("highscore.txt", "r");
+    FILE *file = fopen(TextFormat("%s/.gloom_highscore", getenv("HOME")), "r");
     if (file == NULL) {
         return 0;
     }
@@ -37,7 +37,7 @@ int load_high_score() {
 }
 
 void write_high_score() {
-    FILE *file = fopen("highscore.txt", "w");
+    FILE *file = fopen(TextFormat("%s/.gloom_highscore", getenv("HOME")), "w");
     fprintf(file, "%d", high_score);
     fclose(file);
 }
