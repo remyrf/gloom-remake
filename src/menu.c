@@ -11,7 +11,7 @@
 #define TITLE_SIZE 24
 #define TITLE_AMPLITUDE 3
 #define TITLE_SPEED 8
-#define TITLE_OFFSET 35
+#define TITLE_OFFSET 40
 
 #define RECT_DISTANCE 10
 #define RECT_WIDTH 2
@@ -21,7 +21,7 @@
 #define BUTTON_HEIGHT 25
 #define BUTTON_GAP 2
 #define BUTTON_OFFSET 90
-#define BUTTON_COUNT 3
+#define BUTTON_COUNT 2
 #define BUTTON_FONT_SIZE 18
 #define BUTTON_WIDTH (GAME_WIDTH - RECT_DISTANCE * 2 - BUTTON_PADDING * 2)
 
@@ -33,13 +33,9 @@ Music menu_music;
 typedef struct {
     Rectangle rect;
     const char *text;
-    void (*on_clicked)(void);
+    void (*on_clicked)();
     bool hovering;
 } Button;
-
-void how_to_play() {
-    // TODO:
-}
 
 void play() {
     scene = SCENE_GAME;
@@ -51,10 +47,6 @@ void quit() {
 }
 
 Button buttons[] = {
-    {{RECT_DISTANCE + BUTTON_PADDING, BUTTON_OFFSET, BUTTON_WIDTH, BUTTON_HEIGHT},
-     "How to play",
-     how_to_play,
-     false},
     {{RECT_DISTANCE + BUTTON_PADDING, BUTTON_HEIGHT + BUTTON_GAP + BUTTON_OFFSET, BUTTON_WIDTH,
       BUTTON_HEIGHT},
      "Play",
@@ -105,8 +97,7 @@ void draw_menu() {
                    BUTTON_FONT_SIZE, 1, buttons[i].hovering ? COLOR_BLACK : COLOR_WHITE);
     }
 
-    DrawRectangle(243, 91, 2, 3, buttons[0].hovering ? COLOR_WHITE : COLOR_BLACK);
-    DrawRectangle(182, 118, 2, 3, buttons[1].hovering ? COLOR_WHITE : COLOR_BLACK);
+    DrawRectangle(182, 118, 2, 3, buttons[0].hovering ? COLOR_WHITE : COLOR_BLACK);
     DrawTexturePro(
         menu_background_texture,
         (Rectangle){0, 87.5, menu_background_texture.width, menu_background_texture.height - 85},
